@@ -1,0 +1,64 @@
+<html>
+    <head>
+        <title>Track time</title>
+        <script src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.0/jquery.min.js'></script>
+        <style type='text/css'>
+            td.timediv {
+                text-align: center;
+                background: #cca;
+            }
+
+            td.timediv:hover {
+                background: #ddb;
+                cursor: pointer;
+            }
+
+            td.timediv:active {
+                background: #cca;
+            }
+
+            table.timedivs {
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <table id='timetable' class='timedivs'>
+            <tbody>
+            </tbody>
+        </table>
+        <script>
+            var time = {
+                    days: [
+                        {
+                            timedivs: [
+                                {
+                                    name: 'misc',
+                                    duration: 0
+                                }
+                            ]
+                        }
+                    ]
+                },
+
+                day,
+                row,
+                timediv,
+                i,j;
+
+            for (i = 0; i < time.days.length; ++i) {
+                day = time.days[i];
+                row = $(document.createElement('tr'));
+                $('#timetable tbody').append(row);
+                for (j = 0; j < day.timedivs.length; ++j) {
+                    timediv = day.timedivs[j];
+                    row.append('<td class="timediv">' +
+                                    '<div class="timediv-label">' + timediv.name + '</div>' +
+                                    '<div class="timediv-time">' + timediv.duration + '</div>' +
+                               '</td>');
+                }
+            }
+        </script>
+    </body>
+</html> 
