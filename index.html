@@ -34,7 +34,11 @@
                         {
                             timedivs: [
                                 {
-                                    name: 'misc',
+                                    name: 'Functional Work',
+                                    duration: 0
+                                },
+                                {
+                                    name: 'Develop/Config',
                                     duration: 0
                                 }
                             ]
@@ -44,8 +48,11 @@
 
                 day,
                 row,
+                td,
                 timediv,
-                i,j;
+                i,j,
+                current,
+                currentData;
 
             for (i = 0; i < time.days.length; ++i) {
                 day = time.days[i];
@@ -53,12 +60,38 @@
                 $('#timetable tbody').append(row);
                 for (j = 0; j < day.timedivs.length; ++j) {
                     timediv = day.timedivs[j];
-                    row.append('<td class="timediv">' +
-                                    '<div class="timediv-label">' + timediv.name + '</div>' +
-                                    '<div class="timediv-time">' + timediv.duration + '</div>' +
-                               '</td>');
+                    td = $(document.createElement('td'));
+                    td.data(timediv);
+                    td.addClass('timediv');
+                    td.append($(document.createElement('div')).addClass('timediv-label').html(timediv.name));
+                    td.append($(document.createElement('div')).addClass('timediv-time').html(timediv.duration));
+                    row.append(td);
                 }
             }
+
+            $('.timediv').live('click', function () {
+                if (current !== undefined && current.id === $(this).id) {
+                    current = undefined;
+                } else {
+                    current = $(this);
+                    currentData = current.data();
+                    currentData.lastTime = (new Date()).getTime();
+                    current.data(currentData);
+                }
+            });
+
+            function update() {
+                if (current) {
+                    currentData = current.data();
+                    currentData.duration = currentData.duration + ((new Date()).getTime() - currentData.lastTime);
+                    currentData.lastTime = (new Date()).getTime();
+                    current.data(currentData);
+                    current.children('.timediv-time').html(currentData.duration/1000);
+                }
+                setTimeout(update, 1000);
+            }
+
+            update();
         </script>
     </body>
 </html> 
