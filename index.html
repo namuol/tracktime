@@ -781,12 +781,14 @@ jQuery.cookie = function(name, value, options) {
 
             $('.timediv').live('click', function () {
                 if (current === undefined || current.attr('id') !== $(this).attr('id')) {
-                    if (current !== undefined) {
+                    if (current) {
                         current.removeClass('active') ;
                         currentData = current.data();
-                        currentData.current = false;
-                        currentData.lastTime = undefined;
-                        current.data(currentData);
+                        if (currentData) {
+                            currentData.current = false;
+                            currentData.lastTime = undefined;
+                            current.data(currentData);
+                        }
                     }
 
                     current = $(this);
@@ -828,12 +830,15 @@ jQuery.cookie = function(name, value, options) {
             });
 
             $('.delete-button').live('click', function () {
-                return; // TODO
                 if (confirm("you sure?")) {
                     $(this).parent().next().remove();
                     $(this).parent().remove();
+                    if ($(this).parent().data('current')) {
+                        current = undefined;
+                    }
                     updateTimeObject();
                 }
+                return false;
             });
 
             $('.date').live('click', function () {
