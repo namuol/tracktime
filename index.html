@@ -586,26 +586,30 @@ jQuery.cookie = function(name, value, options) {
         <style type='text/css'>
             body {
                 font-family: 'Helvetica', 'Arial';
-                font-weight: bold;
             }
 
-            td.date {
-                max-height: 1em;
-                height: 1em;
+            div.date {
                 text-align: center;
+                padding: 0.15em 0 0.15em 0;
+                margin-top: 0.15em;
                 background: #ddd;
             }
 
-            td.date:hover {
+            div.date:hover {
                 background: #eee;
                 cursor: pointer;
             }
 
-            td.date:active {
+            div.date:active {
                 background: #ddd;
             }
 
+            td {
+                margin: 0;
+            }
+
             td.timediv {
+                color: #666;
                 text-align: center;
                 background: #cca;
             }
@@ -619,12 +623,8 @@ jQuery.cookie = function(name, value, options) {
                 background: #cca;
             }
 
-            table.timedivs {
-                width: 100%;
-                height: 100%;
-            }
-
             td.active {
+                color: #000;
                 background: #eca;
             }
 
@@ -636,6 +636,15 @@ jQuery.cookie = function(name, value, options) {
                 background: #eca;
             }
 
+            td.timediv.disabled, td.disabled {
+                cursor: inherit;
+                background: #ddd;
+            }
+
+            td.timediv.disabled div.delete-button {
+                display: none;
+            }
+            
             .insert-button {
                 text-align: center;
                 background: #cae;
@@ -651,6 +660,15 @@ jQuery.cookie = function(name, value, options) {
                 background: #cae;
             }
 
+            td.insert-timediv {
+                background: #cca;
+                text-align: center;
+            }
+
+            td.insert-timediv form input {
+                text-align: center;
+            }
+
             .timediv-time {
                 width: 95%;
             }
@@ -662,10 +680,13 @@ jQuery.cookie = function(name, value, options) {
             .delete-button {
                 width: 15pt;
                 height: 15pt;
-                position: absolute;
-                top: 2.5em;
-                margin-left: 2pt;
                 background: #eaa;
+            }
+
+            table.timedivs {
+                margin: 0;
+                width: 100%;
+                height: 100pt;
             }
 
             div.delete-button:hover {
@@ -678,10 +699,6 @@ jQuery.cookie = function(name, value, options) {
         </style>
     </head>
     <body>
-        <table id='timetable' class='timedivs'>
-            <tbody>
-            </tbody>
-        </table>
         <script>
             var defaultDays = [
                     {
@@ -711,7 +728,8 @@ jQuery.cookie = function(name, value, options) {
                 i,j,
                 current,
                 currentData,
-                time;
+                time,
+                isToday;
 
             defaultTime = {
                 days: [
@@ -723,7 +741,6 @@ jQuery.cookie = function(name, value, options) {
             }
 
             time = $.parseJSON($.cookie('time')) || defaultTime;
-            console.log(time);
             for (i=0; i < time.days.length; ++i) {
                 day = time.days[i];
                 if (day.dateStr === dateStr(new Date())) {
@@ -750,10 +767,14 @@ jQuery.cookie = function(name, value, options) {
                 return d.getMonth() + div + d.getDate() + div + d.getFullYear();
             }
 
-            function makeInsertButton() {
+            function makeInsertButton(isToday) {
                 var td = $(document.createElement('td'));
-                td.addClass('insert-button');
-                td.html('+');
+                if (isToday) {
+                    td.addClass('insert-button');
+                    td.html('+');
+                } else {
+                    td.addClass('disabled');
+                }
                 return td;
             }
 
@@ -770,34 +791,39 @@ jQuery.cookie = function(name, value, options) {
 
             for (i = 0; i < time.days.length; ++i) {
                 day = time.days[i];
-                dateRow = $(document.createElement('tr'));
-                td = $(document.createElement('td'));
-                td.addClass('date');
-                td.html(day.dateStr);
-                dateRow.append(td);
+                isToday = day.dateStr === dateStr(new Date());
+                dateRow = $(document.createElement('div'));
+                dateRow.addClass('date');
+                dateRow.html(day.dateStr);
+                table = $(document.createElement('table'));
+                table.addClass('timedivs');
+                tbody = $(document.createElement('tbody'));
+                table.append(tbody);
                 row = $(document.createElement('tr'));
                 row.attr('id', 'row_' + i);
                 row.addClass('timerow');
-                $('#timetable tbody').append(dateRow);
-                $('#timetable tbody').append(row);
+                $('body').append(dateRow);
                 for (j = 0; j < day.timedivs.length; ++j) {
                     timediv = day.timedivs[j];
                     td = makeTimeDiv(timediv);
-                    row.append(makeInsertButton()).append(td);
-                    if (td.data().current) {
+                    row.append(makeInsertButton(isToday));
+                    if (!isToday) {
+                        td.addClass('disabled');
+                    } else if (td.data().current) {
                         current = td;
                         currentData = current.data();
                         if (!currentData.lastTime)
                             currentData.lastTime = (new Date()).getTime();
                     }
-
+                    row.append(td)
                 }
-                row.append(makeInsertButton());
-                dateRow.children('td').attr('colspan',j*2+1);
+                row.append(makeInsertButton(isToday));
+                table.append(row);
+                $('body').append(table);
             }
 
             $('.timediv').live('click', function () {
-                if (current === undefined || current.attr('id') !== $(this).attr('id')) {
+                if (current === undefined || current.attr('id') !== $(this).attr('id') && !$(this).hasClass('disabled')) {
                     if (current) {
                         current.removeClass('active') ;
                         currentData = current.data();
@@ -820,6 +846,7 @@ jQuery.cookie = function(name, value, options) {
             $('.insert-button').live('click', function () {
                 $(this).removeClass('insert-button');
                 $(this).html('<form><input type="text"></input></form>');
+                $(this).addClass('insert-timediv');
                 $(this).children('form').children('input').focus();
                 var that = $(this);
 
@@ -831,23 +858,21 @@ jQuery.cookie = function(name, value, options) {
                 $(this).children('form').children('input').blur(function () {
                     var name = $(this).val(), newThat;
                     if (name && name !== '') {
-                        that.before(makeInsertButton());
-                        that.after(makeInsertButton());
+                        that.before(makeInsertButton(true));
+                        that.after(makeInsertButton(true));
                         newThat = makeTimeDiv({name: name, duration:0});
                         that.replaceWith(newThat);
                         that = newThat;
                         console.log(that.parent());
-                        console.log(that.parent().children());
-                        $('td.date').attr('colspan', that.parent().children().length);
                         updateTimeObject();
                     } else {
-                        that.replaceWith(makeInsertButton());
+                        that.replaceWith(makeInsertButton(true));
                     }
                 })
             });
 
             $('.delete-button').live('click', function () {
-                if (confirm("you sure?")) {
+                if (!$(this).parent().hasClass('disabled') && confirm("you sure?")) {
                     $(this).parent().next().remove();
                     $(this).parent().remove();
                     if ($(this).parent().data('current')) {
@@ -859,7 +884,7 @@ jQuery.cookie = function(name, value, options) {
             });
 
             $('.date').live('click', function () {
-                $(this).parent().next().toggle();
+                $(this).next().toggle();
             });
 
             function updateTimeObject() {
@@ -876,14 +901,22 @@ jQuery.cookie = function(name, value, options) {
                 if (current) {
                     current.addClass('active');
                     currentData = current.data();
-                    currentData.duration = currentData.duration + ((new Date()).getTime() - currentData.lastTime);
-                    currentData.lastTime = (new Date()).getTime();
-                    current.data(currentData);
-                    current.children('.timediv-time').html(timeStr(currentData.duration));
-                    updateTimeObject();
+                    if (currentData) {
+                        currentData.duration = currentData.duration + ((new Date()).getTime() - currentData.lastTime);
+                        currentData.lastTime = (new Date()).getTime();
+                        current.data(currentData);
+                        current.children('.timediv-time').html(timeStr(currentData.duration));
+                        updateTimeObject();
+                    }
                 }
                 setTimeout(update, 1000);
             }
+            
+            $.each($('.date'), function (i,e) {
+                if ($(e).html() !== dateStr(new Date())) {
+                    $(e).click();
+                }
+            });
 
             update();
         </script>
