@@ -1,0 +1,349 @@
+<html>
+    <head>
+        <title>Track time</title>
+        <script src='js/jquery-1.5.2.js'></script>
+        <script src='js/yui.js'></script>
+        <script src='js/storage-lite.js'></script>
+        <style type='text/css'>
+            body {
+                font-family: 'Helvetica', 'Arial';
+                background: #444;
+            }
+
+            div.date {
+                text-align: center;
+                padding: 0.15em 0 0.15em 0;
+                margin-top: 0.15em;
+                background: #ddd;
+            }
+
+            div.date:hover {
+                background: #eee;
+                cursor: pointer;
+            }
+
+            div.date:active {
+                background: #ddd;
+            }
+
+            td {
+                margin: 0;
+            }
+
+            td.timediv {
+                color: #666;
+                text-align: center;
+                background: #cca;
+            }
+
+            td.timediv:hover {
+                background: #ddb;
+                cursor: pointer;
+            }
+
+            td.timediv:active {
+                background: #cca;
+            }
+
+            td.active {
+                color: #000;
+                background: #eca;
+            }
+
+            td.active:hover {
+                background: #fdb;
+            }
+
+            td.timediv.active:active {
+                background: #eca;
+            }
+
+            td.timediv.disabled, td.disabled {
+                cursor: inherit;
+                background: #ddd;
+            }
+
+            td.timediv.disabled div.delete-button {
+                display: none;
+            }
+            
+            .insert-button {
+                text-align: center;
+                background: #cae;
+                width: 10pt;
+            }
+
+            td.insert-button:hover {
+                cursor: pointer;
+                background: #dbf;
+            }
+
+            td.insert-button:active {
+                background: #cae;
+            }
+
+            td.insert-timediv {
+                background: #cca;
+                text-align: center;
+            }
+
+            td.insert-timediv form input {
+                text-align: center;
+            }
+
+            .timediv-time {
+                width: 95%;
+            }
+
+            .timediv-label {
+                width: 95%;
+            }
+
+            .delete-button {
+                width: 15pt;
+                height: 15pt;
+                background: #eaa;
+            }
+
+            table.timedivs {
+                margin: 0;
+                width: 100%;
+                height: 100pt;
+            }
+
+            div.delete-button:hover {
+                background: #fbb;
+            }
+
+            div.delete-button:active {
+                background: #eaa;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+        YUI().use('gallery-storage-lite', function (Y) {
+            Y.StorageLite.on('storage-lite:ready', function () {
+                var defaultDays = [
+                        {
+                            name: 'Functional Work',
+                            duration: 0
+                        },
+                        {
+                            name: 'Develop/Config',
+                            duration: 0
+                        },
+                        {
+                            name: 'Project Admin',
+                            duration: 0
+                        },
+                        {
+                            name: 'Break',
+                            duration: 0
+                        }
+                    ],
+
+                    defaultTime,
+                    day,
+                    dateRow,
+                    row,
+                    td,
+                    timediv,
+                    i,j,
+                    current,
+                    currentData,
+                    time,
+                    isToday;
+
+                defaultTime = {
+                    days: [
+                        {
+                            dateStr: dateStr(new Date()),
+                            timedivs: defaultDays
+                        }
+                    ]
+                }
+
+                time = Y.StorageLite.getItem('time', true) || defaultTime;
+                for (i=0; i < time.days.length; ++i) {
+                    day = time.days[i];
+                    if (day.dateStr === dateStr(new Date())) {
+                        time.hasCurrentDay = true; 
+                        break;
+                    }
+                }
+
+                if (!time.hasCurrentDay) {
+                    time.days.push({dateStr: dateStr(new Date()), timedivs: defaultDays});
+                }
+                time.hasCurrentDay = false;
+
+                function timeStr(ms) {
+                    var h, m, s;
+                    h = Math.floor(ms / (1000 * 60 * 60));
+                    m = Math.floor((ms / (1000 * 60))) % 60;
+                    s = Math.floor((ms / 1000)) % 60;
+                    return h + ":" + m + ":" + s;
+                }
+
+                function dateStr(d,div) {
+                    div = div || '/'
+                    return d.getMonth() + div + d.getDate() + div + d.getFullYear();
+                }
+
+                function makeInsertButton(isToday) {
+                    var td = $(document.createElement('td'));
+                    if (isToday) {
+                        td.addClass('insert-button');
+                        td.html('+');
+                    } else {
+                        td.addClass('disabled');
+                    }
+                    return td;
+                }
+
+                function makeTimeDiv(timediv) {
+                    var td = $(document.createElement('td'));
+                    td.attr('id', timediv.name + '_' + i);
+                    td.data(timediv);
+                    td.addClass('timediv');
+                    td.append($(document.createElement('div')).addClass('delete-button').append('x'));
+                    td.append($(document.createElement('div')).addClass('timediv-label').html(timediv.name));
+                    td.append($(document.createElement('div')).addClass('timediv-time').html(timeStr(timediv.duration)));
+                    return td;
+                }
+
+                for (i = 0; i < time.days.length; ++i) {
+                    day = time.days[i];
+                    isToday = day.dateStr === dateStr(new Date());
+                    dateRow = $(document.createElement('div'));
+                    dateRow.addClass('date');
+                    dateRow.html(day.dateStr);
+                    table = $(document.createElement('table'));
+                    table.addClass('timedivs');
+                    tbody = $(document.createElement('tbody'));
+                    table.append(tbody);
+                    row = $(document.createElement('tr'));
+                    row.attr('id', 'row_' + i);
+                    row.addClass('timerow');
+                    $('body').append(dateRow);
+                    for (j = 0; j < day.timedivs.length; ++j) {
+                        timediv = day.timedivs[j];
+                        td = makeTimeDiv(timediv);
+                        row.append(makeInsertButton(isToday));
+                        if (!isToday) {
+                            td.addClass('disabled');
+                        } else if (td.data().current) {
+                            current = td;
+                            currentData = current.data();
+                            if (!currentData.lastTime)
+                                currentData.lastTime = (new Date()).getTime();
+                        }
+                        row.append(td)
+                    }
+                    row.append(makeInsertButton(isToday));
+                    table.append(row);
+                    $('body').append(table);
+                }
+
+                $('.timediv').live('click', function () {
+                    if (current === undefined || current.attr('id') !== $(this).attr('id') && !$(this).hasClass('disabled')) {
+                        if (current) {
+                            current.removeClass('active') ;
+                            currentData = current.data();
+                            if (currentData) {
+                                currentData.current = false;
+                                currentData.lastTime = undefined;
+                                current.data(currentData);
+                            }
+                        }
+
+                        current = $(this);
+                        current.addClass('active');
+                        currentData = current.data();
+                        currentData.lastTime = (new Date()).getTime();
+                        currentData.current = true;
+                        current.data(currentData);
+                    }
+                });
+
+                $('.insert-button').live('click', function () {
+                    $(this).removeClass('insert-button');
+                    $(this).html('<form><input type="text"></input></form>');
+                    $(this).addClass('insert-timediv');
+                    $(this).children('form').children('input').focus();
+                    var that = $(this);
+
+                    $(this).children('form').submit(function () {
+                        $(that).children('form').children('input').blur();
+                        return false;
+                    });
+
+                    $(this).children('form').children('input').blur(function () {
+                        var name = $(this).val(), newThat;
+                        if (name && name !== '') {
+                            that.before(makeInsertButton(true));
+                            that.after(makeInsertButton(true));
+                            newThat = makeTimeDiv({name: name, duration:0});
+                            that.replaceWith(newThat);
+                            that = newThat;
+                            updateTimeObject();
+                        } else {
+                            that.replaceWith(makeInsertButton(true));
+                        }
+                    })
+                });
+
+                $('.delete-button').live('click', function () {
+                    if (!$(this).parent().hasClass('disabled') && confirm("you sure?")) {
+                        $(this).parent().next().remove();
+                        $(this).parent().remove();
+                        if ($(this).parent().data('current')) {
+                            current = undefined;
+                        }
+                        updateTimeObject();
+                    }
+                    return false;
+                });
+
+                $('.date').live('click', function () {
+                    $(this).next().toggle();
+                });
+
+                function updateTimeObject() {
+                    $.each($('tr.timerow'), function (i,x) {
+                        time.days[i].timedivs = [];
+                        $.each($(x).children('td.timediv'), function (j,e) {
+                            time.days[i].timedivs.push($(e).data());
+                        });
+                    });
+                    Y.StorageLite.setItem('time', time, true);
+                }
+
+                function update() {
+                    if (current) {
+                        current.addClass('active');
+                        currentData = current.data();
+                        if (currentData) {
+                            currentData.duration = currentData.duration + ((new Date()).getTime() - currentData.lastTime);
+                            currentData.lastTime = (new Date()).getTime();
+                            current.data(currentData);
+                            current.children('.timediv-time').html(timeStr(currentData.duration));
+                            updateTimeObject();
+                        }
+                    }
+                    setTimeout(update, 1000);
+                }
+                
+                $.each($('.date'), function (i,e) {
+                    if ($(e).html() !== dateStr(new Date())) {
+                        $(e).click();
+                    }
+                });
+
+                update();
+            });
+        });
+        </script>
+    </body>
+</html> 
