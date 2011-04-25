@@ -22,5 +22,9 @@ deploy: build $(HTML_OUT) $(JS_MIN)
 	git push origin gh-pages
 	git checkout master
 
+dev: build $(HTML_OUT) $(JS_MIN)
+	cp -r js /srv/http/files/tracktime/.
+	cp -r *.html /srv/http/files/tracktime/.
+
 clean:
 	rm -rf build
