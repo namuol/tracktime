@@ -176,7 +176,7 @@
 
                 if (!time.hasCurrentDay) {
                     if (time.days.length > 0) {
-                        $.extend(prevTimeDivs,time.days[time.days.length - 1]);
+                        $.extend(prevTimeDivs,time.days[time.days.length - 1].timedivs);
                         for (i = 0; i < prevTimeDivs.length; i += 1) {
                             prevTimeDivs[i].duration = 0;
                             prevTimeDivs[i].lastTime = undefined;
