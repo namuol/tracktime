@@ -124,7 +124,7 @@
         <script>
         YUI().use('gallery-storage-lite', function (Y) {
             Y.StorageLite.on('storage-lite:ready', function () {
-                var defaultDays = [
+                var defaultTimeDivs = [
                         {
                             name: 'Functional Work',
                             duration: 0
@@ -144,6 +144,7 @@
                     ],
 
                     defaultTime,
+                    prevTimeDivs,
                     day,
                     dateRow,
                     row,
@@ -159,7 +160,7 @@
                     days: [
                         {
                             dateStr: dateStr(new Date()),
-                            timedivs: defaultDays
+                            timedivs: defaultTimeDivs
                         }
                     ]
                 }
@@ -174,7 +175,15 @@
                 }
 
                 if (!time.hasCurrentDay) {
-                    time.days.push({dateStr: dateStr(new Date()), timedivs: defaultDays});
+                    if (time.days.length > 0) {
+                        $.extend(prevTimeDivs,time.days[time.days.length - 1]);
+                        for (i = 0; i < prevTimeDivs.length; i += 1) {
+                            prevTimeDivs[i].duration = 0;
+                            prevTimeDivs[i].lastTime = undefined;
+                            prevTimeDivs[i].current = false;
+                        }
+                    }
+                    time.days.push({dateStr: dateStr(new Date()), timedivs: prevTimeDivs || defaultTimeDivs});
                 }
                 time.hasCurrentDay = false;
 
