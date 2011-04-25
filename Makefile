@@ -15,5 +15,12 @@ $(JS_MIN): build/%.js: %.js
 $(HTML_OUT): build/%.html: %.html
 	cp $< $@
 
+deploy: build $(HTML_OUT) $(JS_MIN)
+	git checkout gh-pages
+	cp -r build/* .
+	git commit -a -m "Auto-deployed page to github."
+	git push origin gh-pages
+	git checkout master
+
 clean:
 	rm -rf build
