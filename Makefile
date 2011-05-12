@@ -18,6 +18,7 @@ $(HTML_OUT): build/%.html: %.html
 deploy: build $(HTML_OUT) $(JS_MIN)
 	git checkout gh-pages
 	cp -r build/* .
+	git add *
 	git commit -a -m "Auto-deployed page to github."
 	git push origin gh-pages
 	git checkout master
