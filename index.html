@@ -4,17 +4,31 @@
         <script src='js/jquery-1.5.2.js'></script>
         <script src='js/yui.js'></script>
         <script src='js/storage-lite.js'></script>
+        <script src='js/jquery.event.drag-2.0.js'></script>
         <style type='text/css'>
             body {
                 font-family: 'Helvetica', 'Arial';
                 background: #444;
+                margin: 5pt 3.5pt;
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                user-select: none;
             }
 
             div.date {
                 text-align: center;
                 padding: 0.15em 0 0.15em 0;
                 margin-top: 0.15em;
+                margin-left: 1.5pt;
+                margin-right: 1.5pt;
                 background: #ddd;
+                border-radius: 5pt 5pt 0pt 0pt;
+                font-family: monospace, 'Courier New', 'Courier'; 
+            }
+
+            div.date.closed {
+                border-radius: 5pt;
             }
 
             div.date:hover {
@@ -41,6 +55,19 @@
                 cursor: pointer;
             }
 
+            tr.dragging td.timediv:hover {
+                background: #cca;
+                cursor: normal;
+            }
+
+            tr.dragging td.timediv.dragover {
+                background: #ffc;
+            }
+
+            tr.dragging td.timediv.active:hover {
+                background: #fdb;
+            }
+
             td.timediv:active {
                 background: #cca;
             }
@@ -56,6 +83,22 @@
 
             td.timediv.active:active {
                 background: #eca;
+            }
+
+            tr.timerow {
+                margin-left: -3pt;
+            }
+
+            table.timedivs {
+                margin: 0;
+                width: 100%;
+                height: 100pt;
+            }
+
+            div.chunk {
+                padding: 3pt;
+                background: #ada;
+                font-family: monospace, 'Courier New', 'Courier'; 
             }
 
             td.timediv.disabled, td.disabled {
@@ -93,6 +136,7 @@
 
             .timediv-time {
                 width: 95%;
+                font-family: monospace, 'Courier New', 'Courier'; 
             }
 
             .timediv-label {
@@ -105,11 +149,6 @@
                 background: #eaa;
             }
 
-            table.timedivs {
-                margin: 0;
-                width: 100%;
-                height: 100pt;
-            }
 
             div.delete-button:hover {
                 background: #fbb;
@@ -122,6 +161,23 @@
     </head>
     <body>
         <script>
+        function collide(object1, object2) {
+            var x1 = object1.offset().left;
+            var y1 = object1.offset().top;
+            var h1 = object1.outerHeight(true);
+            var w1 = object1.outerWidth(true);
+            var b1 = y1 + h1;
+            var r1 = x1 + w1;
+            var x2 = object2.offset().left;
+            var y2 = object2.offset().top;
+            var h2 = object2.outerHeight(true);
+            var w2 = object2.outerWidth(true);
+            var b2 = y2 + h2;
+            var r2 = x2 + w2;
+            if (b1 < y2 || y1 > b2 || r1 < x2 || x1 > r2) return false;
+            return true;
+        }
+
         YUI().use('gallery-storage-lite', function (Y) {
             Y.StorageLite.on('storage-lite:ready', function () {
                 var defaultTimeDivs = [
@@ -154,7 +210,8 @@
                     current,
                     currentData,
                     time,
-                    isToday;
+                    isToday,
+                    dragging = false;
 
                 defaultTime = {
                     days: [
@@ -187,12 +244,20 @@
                 }
                 time.hasCurrentDay = false;
 
+                function toSubtract(pData) {
+                    return Math.min(15*1000*60, pData.duration);
+                }
+
+                function padZ(n) {
+                    return (n >= 10 ? n : '0'+ n);
+                }
+
                 function timeStr(ms) {
                     var h, m, s;
                     h = Math.floor(ms / (1000 * 60 * 60));
                     m = Math.floor((ms / (1000 * 60))) % 60;
                     s = Math.floor((ms / 1000)) % 60;
-                    return h + ":" + m + ":" + s;
+                    return  padZ(h) + ":" + padZ(m) + ":" + padZ(s);
                 }
 
                 function dateStr(d,div) {
@@ -211,21 +276,26 @@
                     return td;
                 }
 
+                function radify(x) {
+                    $(x).children('td').first().css({'border-bottom-left-radius': '5pt'});
+                    $(x).children('td').last().css({'border-bottom-right-radius': '5pt'});
+                }
+
                 function makeTimeDiv(timediv) {
                     var td = $(document.createElement('td'));
                     td.attr('id', timediv.name + '_' + i);
                     td.data(timediv);
                     td.addClass('timediv');
-                    td.append($(document.createElement('div')).addClass('delete-button').append('x'));
-                    td.append($(document.createElement('div')).addClass('timediv-label').html(timediv.name));
-                    td.append($(document.createElement('div')).addClass('timediv-time').html(timeStr(timediv.duration)));
+                    td.append($('<div>').addClass('delete-button').append('x'));
+                    td.append($('<div>').addClass('timediv-label').html(timediv.name));
+                    td.append($('<div>').addClass('timediv-time').html(timeStr(timediv.duration)));
                     return td;
                 }
 
                 for (i = 0; i < time.days.length; ++i) {
                     day = time.days[i];
                     isToday = day.dateStr === dateStr(new Date());
-                    dateRow = $(document.createElement('div'));
+                    dateRow = $('<div>');
                     dateRow.addClass('date');
                     dateRow.html(day.dateStr);
                     table = $(document.createElement('table'));
@@ -251,12 +321,14 @@
                         row.append(td)
                     }
                     row.append(makeInsertButton(isToday));
+                    radify(row);
                     table.append(row);
                     $('body').append(table);
                 }
 
                 $('.timediv').live('click', function () {
-                    if (current === undefined || current.attr('id') !== $(this).attr('id') && !$(this).hasClass('disabled')) {
+                    if (current === undefined ||
+                        current.attr('id') !== $(this).attr('id') && !$(this).hasClass('disabled')) {
                         if (current) {
                             current.removeClass('active') ;
                             currentData = current.data();
@@ -274,6 +346,61 @@
                         currentData.current = true;
                         current.data(currentData);
                     }
+                });
+
+                $('.timediv').live('mouseenter', function () {
+                    if (dragging)
+                        return;
+                    $(this).append($('<div>').addClass('chunk').css({
+                        position: "absolute",
+                        top: $(this).offset().top,
+                        left: $(this).offset().left
+                    }));
+
+                    updateTimeObject();
+                });
+
+                $('.timediv').live('mouseleave', function () {
+                    if (!dragging) {
+                        $(this).children('.chunk').remove();
+                    }
+                });
+
+                $('.chunk').live('drag', function (evt, dragDistance) {
+                    $(this).closest('tr').addClass('dragging');
+                    dragging = true;
+
+                    $(this).css({
+                        top: dragDistance.offsetY,
+                        left: dragDistance.offsetX
+                    });
+                    var that = $(this);
+                    var collided = false;
+                    $(this).parent().parent()
+                    .children('.timediv').each(function (i, e) {
+                        if (!collided && collide(that, $(e))) {
+                            $(e).addClass('dragover');
+                            collided = true;
+                        } else {
+                            $(e).removeClass('dragover');
+                        }
+                    })
+                });
+
+                $('.chunk').live('dragend', function (evt, dragDistance) {
+                    $(this).closest('tr').removeClass('dragging');
+                    var dragover = $(this).parent().parent().children('.dragover');
+                    if (dragover.length > 0) {
+                        dragover = $(dragover[0]);
+                        var pData = $(this).parent().data();
+                        var toSub = toSubtract(pData);
+                        $(this).parent().data('duration', pData.duration - toSub);
+                        dragover.data('duration', dragover.data().duration + toSub);
+                        updateTimeObject();
+                    }
+                    $(this).parent().parent().children().removeClass('dragover');
+                    dragging = false;
+                    $(this).remove();
                 });
 
                 $('.insert-button').live('click', function () {
@@ -296,10 +423,10 @@
                             newThat = makeTimeDiv({name: name, duration:0});
                             that.replaceWith(newThat);
                             that = newThat;
-                            updateTimeObject();
                         } else {
                             that.replaceWith(makeInsertButton(true));
                         }
+                        updateTimeObject();
                     })
                 });
 
@@ -316,28 +443,35 @@
                 });
 
                 $('.date').live('click', function () {
+                    $(this).toggleClass('closed');
                     $(this).next().toggle();
                 });
 
                 function updateTimeObject() {
                     $.each($('tr.timerow'), function (i,x) {
                         time.days[i].timedivs = [];
+                        radify(x);
                         $.each($(x).children('td.timediv'), function (j,e) {
                             time.days[i].timedivs.push($(e).data());
                         });
                     });
                     Y.StorageLite.setItem('time', time, true);
+                    $('.timediv').each(function () {
+                        $(this).children('.timediv-time').html(timeStr($(this).data().duration));
+                        $(this).children('.chunk').html(timeStr(toSubtract($(this).data())));
+                    });
+
+
                 }
 
                 function update() {
-                    if (current) {
+                    if (!dragging && current) {
                         current.addClass('active');
                         currentData = current.data();
                         if (currentData) {
                             currentData.duration = currentData.duration + ((new Date()).getTime() - currentData.lastTime);
                             currentData.lastTime = (new Date()).getTime();
                             current.data(currentData);
-                            current.children('.timediv-time').html(timeStr(currentData.duration));
                             updateTimeObject();
                         }
                     }
