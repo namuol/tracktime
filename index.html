@@ -101,6 +101,10 @@
                 font-family: monospace, 'Courier New', 'Courier'; 
             }
 
+            div.chunk.dragging {
+                box-shadow: 4pt 4pt 2pt rgba(0,0,0,0.5);
+            }
+
             td.timediv.disabled, td.disabled {
                 cursor: inherit;
                 background: #ddd;
@@ -367,6 +371,7 @@
                 });
 
                 $('.chunk').live('drag', function (evt, dragDistance) {
+                    $(this).addClass('dragging');
                     $(this).closest('tr').addClass('dragging');
                     dragging = true;
 
