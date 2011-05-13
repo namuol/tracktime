@@ -5,6 +5,7 @@
         <script src='js/yui.js'></script>
         <script src='js/storage-lite.js'></script>
         <script src='js/jquery.event.drag-2.0.js'></script>
+        <link type="image/x-icon" href="favicon.gif" rel="Shortcut Icon">
         <style type='text/css'>
             body {
                 font-family: 'Helvetica', 'Arial';
@@ -99,10 +100,6 @@
                 padding: 3pt;
                 background: #ada;
                 font-family: monospace, 'Courier New', 'Courier'; 
-            }
-
-            div.chunk.dragging {
-                box-shadow: 4pt 4pt 2pt rgba(0,0,0,0.5);
             }
 
             td.timediv.disabled, td.disabled {
@@ -371,7 +368,6 @@
                 });
 
                 $('.chunk').live('drag', function (evt, dragDistance) {
-                    $(this).addClass('dragging');
                     $(this).closest('tr').addClass('dragging');
                     dragging = true;
 
