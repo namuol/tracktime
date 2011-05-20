@@ -439,7 +439,7 @@
                             that.replaceWith(makeInsertButton(true));
                         }
                         updateTimeObject();
-                    })
+                    });
                 });
 
                 $('.delete-button').live('click', function () {
@@ -479,6 +479,7 @@
                 function update() {
                     if (time.days[time.days.length-1].dateStr !== dateStr(new Date())) {
                         addCurrentDay();
+                        $('.insert-button').html('').addClass('disabled').removeClass('insert-button');
                         $('.timediv').addClass('disabled');
                         addDay(time.days[time.days.length-1]);
                     }
