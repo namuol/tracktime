@@ -102,6 +102,14 @@
                 font-family: monospace, 'Courier New', 'Courier'; 
             }
 
+            div.chunk:hover {
+                background: #cfc;
+            }
+
+            div.chunk.dragging {
+                box-shadow: 2pt 2pt 2pt rgba(0,0,0, 0.3);
+            }
+
             td.timediv.disabled, td.disabled {
                 cursor: inherit;
                 background: #ddd;
@@ -203,15 +211,10 @@
                     defaultTime,
                     prevTimeDivs = [],
                     day,
-                    dateRow,
-                    row,
-                    td,
-                    timediv,
-                    i,j,
+                    i,
                     current,
                     currentData,
                     time,
-                    isToday,
                     dragging = false;
 
                 defaultTime = {
@@ -225,23 +228,26 @@
 
                 time = Y.StorageLite.getItem('time', true) || defaultTime;
                 for (i=0; i < time.days.length; ++i) {
-                    day = time.days[i];
-                    if (day.dateStr === dateStr(new Date())) {
+                    if (time.days[i].dateStr === dateStr(new Date())) {
                         time.hasCurrentDay = true; 
                         break;
                     }
                 }
 
-                if (!time.hasCurrentDay) {
+                function addCurrentDay() {
                     if (time.days.length > 0) {
                         $.extend(true, prevTimeDivs, time.days[time.days.length - 1].timedivs);
                         for (i = 0; i < prevTimeDivs.length; i += 1) {
                             prevTimeDivs[i].duration = 0;
                             prevTimeDivs[i].lastTime = undefined;
-                            prevTimeDivs[i].current = false;
+                            prevTimeDivs[i].current = time.days[time.days.length - 1].timedivs[i].current;
                         }
                     }
                     time.days.push({dateStr: dateStr(new Date()), timedivs: prevTimeDivs || defaultTimeDivs});
+                }
+
+                if (!time.hasCurrentDay) {
+                    addCurrentDay();
                 }
                 time.hasCurrentDay = false;
 
@@ -293,23 +299,22 @@
                     return td;
                 }
 
-                for (i = 0; i < time.days.length; ++i) {
-                    day = time.days[i];
-                    isToday = day.dateStr === dateStr(new Date());
-                    dateRow = $('<div>');
+                function addDay(day) {
+                    var isToday = day.dateStr === dateStr(new Date());
+                    var dateRow = $('<div>');
                     dateRow.addClass('date');
                     dateRow.html(day.dateStr);
-                    table = $(document.createElement('table'));
+                    var table = $(document.createElement('table'));
                     table.addClass('timedivs');
-                    tbody = $(document.createElement('tbody'));
+                    var tbody = $(document.createElement('tbody'));
                     table.append(tbody);
-                    row = $(document.createElement('tr'));
+                    var row = $(document.createElement('tr'));
                     row.attr('id', 'row_' + i);
                     row.addClass('timerow');
                     $('body').append(dateRow);
-                    for (j = 0; j < day.timedivs.length; ++j) {
-                        timediv = day.timedivs[j];
-                        td = makeTimeDiv(timediv);
+                    for (var j = 0; j < day.timedivs.length; ++j) {
+                        var timediv = day.timedivs[j];
+                        var td = makeTimeDiv(timediv);
                         row.append(makeInsertButton(isToday));
                         if (!isToday) {
                             td.addClass('disabled');
@@ -325,6 +330,11 @@
                     radify(row);
                     table.append(row);
                     $('body').append(table);
+
+                }
+
+                for (i = 0; i < time.days.length; ++i) {
+                    addDay(time.days[i]);
                 }
 
                 $('.timediv').live('click', function () {
@@ -368,6 +378,7 @@
                 });
 
                 $('.chunk').live('drag', function (evt, dragDistance) {
+                    $(this).addClass('dragging');
                     $(this).closest('tr').addClass('dragging');
                     dragging = true;
 
@@ -466,6 +477,12 @@
                 }
 
                 function update() {
+                    if (time.days[time.days.length-1].dateStr !== dateStr(new Date())) {
+                        addCurrentDay();
+                        $('.timediv').addClass('disabled');
+                        addDay(time.days[time.days.length-1]);
+                    }
+
                     if (!dragging && current) {
                         current.addClass('active');
                         currentData = current.data();
