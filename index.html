@@ -269,7 +269,7 @@
 
                 function dateStr(d,div) {
                     div = div || '/'
-                    return d.getMonth() + div + d.getDate() + div + d.getFullYear();
+                    return padZ((d.getMonth()+1)) + div + padZ(d.getDate()) + div + d.getFullYear();
                 }
 
                 function makeInsertButton(isToday) {
